@@ -1,0 +1,5 @@
+__pycache__
+/platform-tools
+*.log
+*.db
+venv
