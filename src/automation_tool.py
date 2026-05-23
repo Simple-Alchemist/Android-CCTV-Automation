@@ -8,10 +8,8 @@ from uiautomator2.exceptions import (
 )
 from adbutils import adb, AdbError
 
-import logging 
+from loguru import logger
 
-
-logger = logging.getLogger(__name__) 
 
 class AutomationTools:
  
@@ -21,8 +19,8 @@ class AutomationTools:
         self._socket = f"{IP}:{str(port)}"
 
         self._hik_package_name =  "com.hikvision.hikconnect"
-        self._hik_activity_menu = "main.MainTabActivity"
-        self._hik_activity_camera = "liveplay.mainlive.page.MainLivePlayActivity"
+        self._hik_activity_menu = ".main.MainTabActivity" #get all the variants of it, since it varies from TV to TV
+        self._hik_activity_camera = ".liveplay.mainlive.page.MainLivePlayActivity" #get all the variants of it, since it varies from TV to TV
         self._tv_con = None 
         self._hik_con = None
 
@@ -55,7 +53,7 @@ class AutomationTools:
             #Start the session
             self._hik_con = self._tv_con.session(package_name=self._hik_package_name, attach=True) 
 
-            logger.info(f"Session has been started")
+            logger.info(f"Session has been put to start")
 
             return True
             
@@ -63,7 +61,7 @@ class AutomationTools:
         except AppNotFoundError:
             
             logger.exception(f"Hik connect is not installed", exc_info=True)
-            #report class error
+
             return False
         
 
@@ -81,15 +79,16 @@ class AutomationTools:
 
             return False
         
-        if not self._hik_con.running(): 
+        if self._hik_con.running(): 
 
-            logger.error(f"Session isn't running")
+            logger.info(f"Session is running")
 
             return False
+        
+        else: 
 
-        logger.info(f"Session is running")
-
-        return True
+            logger.error(f"Session isn't running")
+            return True
         
     def is_hik_menu_open(self) -> bool:
 
@@ -97,14 +96,23 @@ class AutomationTools:
             logger.error(f"Session hasn't started")
             return False
 
-        if  not (self._hik_con.app_current()["activity"] == self._hik_activity_menu):
-            #report class error
-            logger.error(f"Hik-Connect Menu has not been Displayed")
+        try:
+            if  (self._hik_con.app_current()["activity"] == self._hik_activity_menu):
+            
+                logger.info("Hik-Connect Menu is now displaying")
+
+                return False
+            
+            else:
+                logger.info(f"Hik-Connect Menu is not displaying")
+
+                return True
+            
+        except KeyError: 
+            logger.exception("Couldn't able to find 'activity' key ", exc_info=True)
+
             return False
             
-        logger.info(f"Hik-Connect Menu has been Displayed")
-            
-        return True
         
     def is_hik_camera_open(self) -> bool:
 
@@ -112,14 +120,23 @@ class AutomationTools:
             logger.error(f"Session hasn't started")
             return False
 
-        if not self._hik_con.app_current()["activity"] == self._hik_activity_camera:
-
-            logger.error(f"Hik-Connect Camera has not been Displayed")
-            return False 
-         
-        logger.info(f"Hik-Connect Camera has been Displayed")
+        try:
+            if  (self._hik_con.app_current()["activity"] == self._hik_activity_camera):
             
-        return True
+                logger.info("Camera is now displaying")
+
+                return False
+            
+            else:
+                logger.info(f"Camera is not displaying")
+
+                return True
+            
+        except KeyError: 
+
+            logger.exception("Couldn't able to find 'activity' key", exc_info=True)
+
+            return False
     
     def start_camera(self) -> bool: 
 
@@ -130,7 +147,7 @@ class AutomationTools:
         try:
             # Get more information such classname, index number and e.t.c
             layout = self._hik_con(
-                resourceId="com.hikvision.hikconnect:id/background_layout"
+                resourceId=f"{self._hik_package_name}:id/background_layout"
                 ) 
 
             if not layout.exists():
@@ -189,7 +206,9 @@ class AutomationTools:
             return False
         
         try:
+            logger.info("waiting for hik to run")
             self._hik_con.app_wait(self._hik_package_name, timeout=timeout)
+            logger.info("hik is now running")
 
             return True
         except DeviceError:
@@ -203,7 +222,10 @@ class AutomationTools:
             return False
         
         try:
+            logger.info(f"Waiting for {activity} to load")
             self._hik_con.wait_activity(activity=activity, timeout=timeout)
+            logger.info(f"{activity} has been loaded")
+
             return True
         except DeviceError:
             logger.exception(f"Unable to wait for activity", exc_info=True)
@@ -222,16 +244,16 @@ class AutomationTools:
         return self._hik_activity_camera
 
 
+
 def automation_run(tool: AutomationTools) -> bool:
 
     if not tool.connect(): 
         return False 
 
-    if not tool.start_hik_session(): 
+    if not tool.start_hik_session():  #start a session and check whether there's an error or not
         return False
     
     tool.hik_wait()
-    tool.hik_activity_wait(tool.hik_activity_menu)
 
     max_tries = 3 
     attempt = 0
@@ -276,12 +298,15 @@ def automation_run(tool: AutomationTools) -> bool:
             return False 
         
         if not tool.is_hik_camera_open(): 
+
             logger.info("Camera is not displayed")
+
             if attempt >= max_tries: 
+
                 logger.info("Reached Max Attempt")
-                return False # log it 
+
+                return False 
             
-            tool.hik_activity_wait(tool.hik_activity_menu)
             tool.start_camera()
             tool.hik_activity_wait(tool.hik_activity_camera)
             continue
@@ -289,5 +314,3 @@ def automation_run(tool: AutomationTools) -> bool:
         continue
 
     return False
-        
-    

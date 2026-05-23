@@ -1,15 +1,9 @@
 import sqlite3
-import logging
+from loguru import logger
 
 from collections import deque
-logging.basicConfig(
-    level=logging.INFO,
-    filename='automation.log',
-    filemode='w',
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
 
-logger = logging.getLogger(__name__) 
+
 
 class NetworkDB:
 
@@ -22,10 +16,10 @@ class NetworkDB:
 
         try:
 
-            self.conn = sqlite3.connect(self.db_path) # connecting to the database!
+            self._conn = sqlite3.connect(self.db_path) # connecting to the database!
             logger.info(f"Successfully connect to {self.db_path}")
 
-            self.conn.row_factory = sqlite3.Row # configuring row_factory from Tuples to Dictionary
+            self._conn.row_factory = sqlite3.Row # configuring row_factory from Tuples to Dictionary
 
             return True 
         
@@ -37,12 +31,12 @@ class NetworkDB:
         
     def fetch_all_network(self) -> deque: 
 
-        if self.conn is None: 
+        if self._conn is None: 
             raise RuntimeError("Connection hasn't been established")
          
         try:
             
-            cursor = self.conn.cursor() #creating a local cursor for fetching data
+            cursor = self._conn.cursor() #creating a local cursor for fetching data
             cursor.execute("SELECT IP, port FROM networks")
             return deque((row['IP'], row['port']) for row in cursor.fetchall()) # error when column is written wrong!
 
@@ -56,15 +50,15 @@ class NetworkDB:
     
     def add_network(self, name: str, IP: str, port: int) -> bool : 
 
-        if self.conn is None: 
+        if self._conn is None: 
             raise RuntimeError("Connection object hasn't been created")
 
         try:
 
             #Instead of creating a local cursor, I simply executed the command through self.conn since I am not fetching data
-            with self.conn:
+            with self._conn:
                 
-                self.conn.execute("INSERT INTO networks (name, IP, port) VALUES (?, ?, ?)", (name, IP, int(port)))
+                self._conn.execute("INSERT INTO networks (name, IP, port) VALUES (?, ?, ?)", (name, IP, int(port)))
                 logger.info(f"Successfully added network: {name} ({IP}:{port})")
                 return True 
 
@@ -77,13 +71,13 @@ class NetworkDB:
 
     def create_table(self) -> bool:
 
-        if self.conn is None: 
+        if self._conn is None: 
 
             raise RuntimeError("Table couldn't be created since the Cursor object hasn't been created")
             
         try:
-            with self.conn:
-                self.conn.execute("""
+            with self._conn:
+                self._conn.execute("""
 
                     CREATE TABLE IF NOT EXISTS networks( 
                
@@ -104,9 +98,7 @@ class NetworkDB:
 
     def close(self): 
 
-       if self.conn:
-            self.conn.close()
+       if self._conn:
+            self._conn.close()
             self.conn = None
             logger.info("Database connection safely closed.")
-
-     
