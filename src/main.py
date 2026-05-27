@@ -1,33 +1,17 @@
 from loguru import logger
-from collections import deque
 
 
-from automation_tool import AutomationTools, automation_run
+from automation_server import AutomationServer 
+from camera_script import automation_run
 from database import NetworkDB
 
 
-network_db = NetworkDB()
+networks: list[tuple[str, str, int]]
 
-network_db.connect_db()
+with NetworkDB() as ndb: 
 
-networks: deque[tuple[str, int]]  = network_db.fetch_all_network()
-
-for network in networks: 
-    
-    IP = network[0]
-    port = network[1] 
-
-    tool = AutomationTools(IP=IP, port=port)
-
-    status =  automation_run(tool=tool) 
-
-    
-    if status is False: 
-
-        logger.info(f"Appending {IP}:{port} to the list")
-
-    else: 
-        logger.info(f"Successfully switched on Camera of {IP}:{port}")
+    networks = ndb.fetch_all_network()
 
 
-network_db.close()
+
+
