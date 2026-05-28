@@ -12,9 +12,8 @@ class AutomationServer:
     def __init__(self, IP:str, port: str|int):
  
         self._socket = f"{IP}:{str(port)}"
-
         self._hik_package_name =  "com.hikvision.hikconnect"
-        self._hik_activity_menu = ".main.MainTabActivity" #get all the variants of it, since it varies from TV to TV
+        self._hik_activity_menus = [".main.MainTabActivity"] #get all the variants of it, since it varies from TV to TV
         self._hik_activity_camera = ".liveplay.mainlive.page.MainLivePlayActivity" #get all the variants of it, since it varies from TV to TV
         self._tv_con = None 
         self._hik_con = None
@@ -25,7 +24,8 @@ class AutomationServer:
 
         return self
     
-    def __exit__(self, exc_type, exc, tb):
+    def __exit__(self, exc_type, exc, tb) :
+        
         self.disconnect()
 
     @property
@@ -51,15 +51,20 @@ class AutomationServer:
     @property
     def current_activity(self) -> str|None: 
 
-        return self.tv_con.app_current().get('activity', None)
+        activity = self.tv_con.app_current().get('activity', None)
+
+        if activity is None: 
+            raise RuntimeError("Can not fetch current activity")
+        
+        return activity
 
     @property
     def hik_package_name(self) -> str:
         return self._hik_package_name 
     
     @property
-    def hik_activity_menu(self) -> str: 
-        return self._hik_activity_menu
+    def hik_activity_menus(self) -> list[str]: 
+        return self._hik_activity_menus
     
     @property
     def hik_activity_camera(self) -> str: 
@@ -74,10 +79,12 @@ class AutomationServer:
         #connect to the Device
         self._tv_con = u2.connect(self._socket)
             
-    def start_hik_session(self, attach: bool) -> None:
+    def start_hik_session(self, attach: bool = True) -> None:
         
+        #Checking if a Hik Session is running or not
         if self._hik_con is not None: 
             raise RuntimeError("There's already a hik session running")
+        
         #Start the session
         self._hik_con = self.tv_con.session(package_name=self.hik_package_name, attach=attach) 
 
@@ -92,20 +99,21 @@ class AutomationServer:
     def is_activity_opened(self, expected_actvitiy: str) -> bool:
         
         current_activity = self.current_activity 
-
-        if current_activity is None:
-            raise RuntimeError("Couldn't load the current Activity")
         
         return current_activity == expected_actvitiy
 
     def is_hik_menu_open(self) -> bool:
 
-        return self.is_activity_opened(expected_actvitiy=self.hik_activity_menu)
+        current_activity = self.current_activity
+
+        return current_activity in self.hik_activity_menus
                     
     def is_hik_camera_open(self) -> bool:
+        
+        current_activity = self.current_activity
 
-        return self.is_activity_opened(expected_actvitiy=self.hik_activity_camera)
-             
+        return current_activity == self.hik_activity_camera
+    
     def start_camera(self) -> None: 
         # Get more information such classname, index number and e.t.c
         layout = self.hik_con(
