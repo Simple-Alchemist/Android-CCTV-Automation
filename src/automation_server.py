@@ -1,6 +1,7 @@
 import uiautomator2 as u2
 from uiautomator2.exceptions import (
     UiObjectNotFoundError,
+    ConnectError,
 )
 from typing import Self, Literal
 
@@ -11,19 +12,20 @@ class AutomationServer:
     
     def __init__(self, IP:str, port: str|int):
  
-        self._socket = f"{IP}:{str(port)}"
-        self._hik_package_name =  "com.hikvision.hikconnect"
-        self._hik_activity_menus = [".main.MainTabActivity"] #get all the variants of it, since it varies from TV to TV
-        self._hik_activity_camera = ".liveplay.mainlive.page.MainLivePlayActivity" #get all the variants of it, since it varies from TV to TV
-        self._tv_con = None 
-        self._hik_con = None
+        self._socket:str = f"{IP}:{str(port)}"
+        self._hik_package_name: str =  "com.hikvision.hikconnect"
+        self._hik_activity_menus: list[str] = [".main.MainTabActivity"] #get all the variants of it, since it varies from TV to TV
+        self._hik_activity_camera: str = ".liveplay.mainlive.page.MainLivePlayActivity" #get all the variants of it, since it varies from TV to TV
+        self._tv_con: None|u2.Device = None 
+        self._hik_con: None|u2.Session = None
 
 
     def __enter__(self) -> Self:
-        self.connect()
 
+        self.connect()
+            
         return self
-    
+ 
     def __exit__(self, exc_type, exc, tb) :
         
         self.disconnect()
@@ -32,7 +34,7 @@ class AutomationServer:
     def tv_con(self) -> u2.Device: 
 
         if self._tv_con is None:
-            raise ConnectionError("Tv Device Object hasn't been created")
+            raise RuntimeError("Tv Device Object hasn't been created")
         
         else: 
 
@@ -42,7 +44,7 @@ class AutomationServer:
     def hik_con(self) -> u2.Session: 
 
         if self._hik_con is None:
-            raise ConnectionError("Hik Session Object hasn't been created")
+            raise RuntimeError("Hik Session Object hasn't been created")
         
         else: 
 
@@ -81,7 +83,7 @@ class AutomationServer:
             
     def start_hik_session(self, attach: bool = True) -> None:
         
-        #Checking if a Hik Session is running or not
+        #Checking if a Hik Session is already running
         if self._hik_con is not None: 
             raise RuntimeError("There's already a hik session running")
         
@@ -96,11 +98,11 @@ class AutomationServer:
 
         return self.hik_con.running()
 
-    def is_activity_opened(self, expected_actvitiy: str) -> bool:
+    def is_activity_opened(self, expected_activity: str) -> bool:
         
         current_activity = self.current_activity 
         
-        return current_activity == expected_actvitiy
+        return current_activity == expected_activity
 
     def is_hik_menu_open(self) -> bool:
 
@@ -115,7 +117,9 @@ class AutomationServer:
         return current_activity == self.hik_activity_camera
     
     def start_camera(self) -> None: 
+
         # Get more information such classname, index number and e.t.c
+        # Or Use Xpath!
         layout = self.hik_con(
             resourceId=f"{self._hik_package_name}:id/background_layout"
             ) 
