@@ -14,6 +14,7 @@ with NetworkDB() as ndb:
     #Creating TV Objects
     for network in ndb.fetch_all_network(): 
         
+        #tv name                           #IP         #port
         tvs[network[0]] =  AutomationServer(network[1], network[2])
 
 logger.info("Successfully Created TV Objects of all Networks")
@@ -33,6 +34,7 @@ with ThreadPoolExecutor(max_workers=len(tvs)) as executor:
         tv_name = tracker[completed_task]
 
         try: 
+
             result = completed_task.result()
 
             if not result: 

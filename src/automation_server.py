@@ -1,7 +1,6 @@
 import uiautomator2 as u2
 from uiautomator2.exceptions import (
     UiObjectNotFoundError,
-    ConnectError,
 )
 from typing import Self, Literal
 
@@ -16,8 +15,8 @@ class AutomationServer:
         self._hik_package_name: str =  "com.hikvision.hikconnect"
         self._hik_activity_menus: list[str] = [".main.MainTabActivity"] #get all the variants of it, since it varies from TV to TV
         self._hik_activity_camera: str = ".liveplay.mainlive.page.MainLivePlayActivity" #get all the variants of it, since it varies from TV to TV
-        self._tv_con: None|u2.Device = None 
-        self._hik_con: None|u2.Session = None
+        self._tv_con: None | u2.Device = None 
+        self._hik_con: None | u2.Session = None
 
 
     def __enter__(self) -> Self:
@@ -26,7 +25,7 @@ class AutomationServer:
             
         return self
  
-    def __exit__(self, exc_type, exc, tb) :
+    def __exit__(self, exc_type, exc, tb):
         
         self.disconnect()
 
@@ -62,10 +61,12 @@ class AutomationServer:
 
     @property
     def hik_package_name(self) -> str:
+
         return self._hik_package_name 
     
     @property
     def hik_activity_menus(self) -> list[str]: 
+
         return self._hik_activity_menus
     
     @property
@@ -83,10 +84,6 @@ class AutomationServer:
             
     def start_hik_session(self, attach: bool = True) -> None:
         
-        #Checking if a Hik Session is already running
-        if self._hik_con is not None: 
-            raise RuntimeError("There's already a hik session running")
-        
         #Start the session
         self._hik_con = self.tv_con.session(package_name=self.hik_package_name, attach=attach) 
 
@@ -98,23 +95,19 @@ class AutomationServer:
 
         return self.hik_con.running()
 
-    def is_activity_opened(self, expected_activity: str) -> bool:
+    def is_activities_opened(self, expected_activities: list[str]) -> bool:
         
         current_activity = self.current_activity 
         
-        return current_activity == expected_activity
+        return current_activity in expected_activities
 
     def is_hik_menu_open(self) -> bool:
 
-        current_activity = self.current_activity
-
-        return current_activity in self.hik_activity_menus
+        return self.is_activities_opened(self.hik_activity_menus)
                     
     def is_hik_camera_open(self) -> bool:
-        
-        current_activity = self.current_activity
 
-        return current_activity == self.hik_activity_camera
+        return self.is_activities_opened([self.hik_activity_camera])
     
     def start_camera(self) -> None: 
 
@@ -137,12 +130,14 @@ class AutomationServer:
 
     def press_button(self, button: Literal["HOME", "BACK"]):
         
-        self.tv_con.press(key=str(button))
+        self.tv_con.press(key=button)
 
     def intentional_sleep(self, seconds: int): 
+
         self.tv_con.sleep(seconds=seconds)
 
-    def disconnect(self) :
+    def disconnect(self):
+
         self.tv_con
         adb.disconnect(self._socket, raise_error=True) 
 

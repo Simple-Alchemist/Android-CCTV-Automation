@@ -36,6 +36,7 @@ def automation_run(server: AutomationServer) -> bool:
             with server: # Automatically Connects to TV and disconnects when some problem occurs
 
                 max_session_attempt = 3
+                
                 for session_attempt in range(1, max_session_attempt):
 
                     try:
@@ -64,7 +65,7 @@ def automation_run(server: AutomationServer) -> bool:
                         
                             if server.is_hik_running() and server.is_hik_menu_open(): 
                                 
-                                if camera_retries <= 3: 
+                                if camera_retries <= max_camera_tries: 
                                     tv_logger.debug("Reached Maximum Tries to Run to Camera")
             
                                     return False
@@ -76,36 +77,32 @@ def automation_run(server: AutomationServer) -> bool:
                                 server.start_camera()
                                 server.hik_activity_wait(activity=server.hik_activity_camera)
                                 
-                                tv_logger.info(f"Camera is now Running")
-                          
+                                tv_logger.info(f"Camera has been put to start")
+
 
                                 continue
 
                             if not server.is_hik_running():
-                                tv_logger.debug(f"Hik Session is not running...")
-                                raise SessionBrokenError("Hik is not running") 
+                                raise SessionBrokenError("Hik session is not running") 
                             
-                            if back_retries <= 10: 
+                            if back_retries <= max_back_tries: 
                                 tv_logger.debug(f"Reached Maximum Tries to Press Back")
                                 return False
                 
                             back_retries += 1        
-                            tv_logger.info(f"{back_retries}/{max_back_tries} attempt is left")
+                            tv_logger.info(f"{back_retries}/{max_back_tries} attempt")
                             server.press_button("BACK")
                             
 
-                            if server.is_activity_opened(expected_activity="HomePage"): 
-
-                                back_retries = 0
-                                camera_retries = 0
+                            if server.is_activities_opened(expected_activities=["HomePage"]): 
 
                                 tv_logger.info(f"Re-establishing Hik-Connect session")
                                 server.restart_hik_session()
                                 server.hik_wait()
 
 
-                                tv_logger.info(f"Session attached. Allowing 30s to stabilize...")
-                                server.intentional_sleep(30)
+                                tv_logger.info(f"Session attached. Allowing 60s to stabilize...")
+                                server.intentional_sleep(60)
 
                             continue
                 
