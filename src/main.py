@@ -7,6 +7,11 @@ from camera_script import automation_run
 from database import NetworkDB
 from config import AutomationServerConfig, CameraScriptConfig
 
+logger.remove()
+
+# 2. Send everything to the log file instead
+logger.add("server.log", format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | [{extra[socket]}] - {message}", level="DEBUG", mode="w" )
+
 tvs: dict[str, AutomationServer] = dict()
 tracker: dict[Any, str] = dict()
 

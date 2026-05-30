@@ -13,6 +13,7 @@ from config import CameraScriptConfig
 
 logger.remove() 
 
+# Custom Format where I'll have log displayed along with it's Socket
 logger.add(
     sys.stderr, 
     format="<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>[{extra[socket]}]</cyan> - <level>{message}</level>",
@@ -21,13 +22,11 @@ logger.add(
 
 logger.configure(extra={"socket": "SYSTEM"})
 
-
-
 def automation_run(server: AutomationServer, cs_config: CameraScriptConfig) -> bool:
 
     tv_logger = logger.bind(socket=server.socket)
 
-    for connection_attempt in range(1, cs_config.max_connection_attempt+1): 
+    for connection_attempt in range(1, cs_config.max_connection_attempt+1):  
 
         try:
 
@@ -35,8 +34,8 @@ def automation_run(server: AutomationServer, cs_config: CameraScriptConfig) -> b
             
             with server: # Automatically Connects to TV and disconnects when some problem occurs
 
-        
-                for session_attempt in range(1, cs_config.max_session_attempt+1):
+                
+                for session_attempt in range(1, cs_config.max_session_attempt+1): 
 
                     try:
 
@@ -82,7 +81,6 @@ def automation_run(server: AutomationServer, cs_config: CameraScriptConfig) -> b
                                 
                                 tv_logger.info(f"Camera has been put to start. Allowing {cs_config.device_stabilization_time}s to stabilize....")
                                 time.sleep(cs_config.device_stabilization_time)
-
 
                                 continue
 
@@ -145,7 +143,7 @@ def automation_run(server: AutomationServer, cs_config: CameraScriptConfig) -> b
                 continue
 
             return False
-
+        
     else:
 
         return False
