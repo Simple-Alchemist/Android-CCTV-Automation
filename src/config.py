@@ -19,7 +19,9 @@ class CameraScriptConfig:
 
     max_connection_attempt: int = field(default=3)
     max_session_attempt: int = field(default=3)
+    camera_tries: int = field(default=0, init=False)
     max_camera_tries: int = field(default=3)
+    back_tries: int = field(default=0, init=False)   
     max_back_tries: int = field(default=5)
 
     press_button_time: int = field(default=15)
@@ -32,5 +34,6 @@ class CameraScriptConfig:
     home_page_package: str = field(default="com.google.android.tvlauncher")
     home_page_activity: str = field(default=".MainActivity")
     
+
 
 

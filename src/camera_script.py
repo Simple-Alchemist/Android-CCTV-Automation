@@ -26,8 +26,6 @@ logger.configure(extra={"socket": "SYSTEM"})
 def automation_run(server: AutomationServer, cs_config: CameraScriptConfig) -> bool:
 
     tv_logger = logger.bind(socket=server.socket)
-    camera_retries = 0 
-    back_retries = 0
 
     for connection_attempt in range(1, cs_config.max_connection_attempt+1): 
 
@@ -46,7 +44,7 @@ def automation_run(server: AutomationServer, cs_config: CameraScriptConfig) -> b
 
                         if server.is_activities_opened(expected_package=cs_config.dream_page_package,expected_activities=[cs_config.dream_page_activity]):
                                 
-                                tv_logger.info("Currently in Dream Activity Brining it to Homepage")
+                                tv_logger.info("Currently in Dream Activity")
                                 server.press_button("HOME")
 
                                 tv_logger.info(f"Brought to in Homepage. Allowing {cs_config.press_button_time}s to stabilize...")
@@ -70,19 +68,20 @@ def automation_run(server: AutomationServer, cs_config: CameraScriptConfig) -> b
                         
                             if server.is_hik_menu_open(): 
                                 
-                                if camera_retries >= cs_config.max_camera_tries: 
+                                if cs_config.camera_tries >= cs_config.max_camera_tries: 
                                     tv_logger.debug("Reached Maximum Tries to Run to Camera")
             
                                     return False
                                 
-                                camera_retries += 1
-                                tv_logger.info(f"{camera_retries}/{cs_config.max_camera_tries} attempt is left")
+                                cs_config.camera_tries += 1
+                                tv_logger.info(f"{cs_config.camera_tries}/{cs_config.max_camera_tries} attempt is left")
                                 tv_logger.info(f"Running the camera...")
 
                                 server.start_camera()
                                 server.hik_activity_wait(activity=server.hik_activity_camera)
                                 
-                                tv_logger.info(f"Camera has been put to start")
+                                tv_logger.info(f"Camera has been put to start. Allowing {cs_config.device_stabilization_time}s to stabilize....")
+                                time.sleep(cs_config.device_stabilization_time)
 
 
                                 continue
@@ -95,16 +94,16 @@ def automation_run(server: AutomationServer, cs_config: CameraScriptConfig) -> b
                                 time.sleep(cs_config.press_button_time)
 
                             if not server.is_hik_running():
-                                raise SessionBrokenError("Hik session is not running") 
+                                raise SessionBrokenError("Hik session is not running")
                             
+                            if cs_config.back_tries >= cs_config.max_back_tries: 
 
-                            
-                            if back_retries >= cs_config.max_back_tries: 
                                 tv_logger.debug(f"Reached Maximum Tries to Press Back")
+
                                 return False
                 
-                            back_retries += 1        
-                            tv_logger.info(f"{back_retries}/{cs_config.max_back_tries} attempt")
+                            cs_config.back_tries += 1        
+                            tv_logger.info(f"{cs_config.back_tries}/{cs_config.max_back_tries} attempt")
                             server.press_button("BACK")
                             logger.info(f"Back Button Pressed. Allowing {cs_config.press_button_time}s to stabilize...")
                             time.sleep(cs_config.press_button_time)
