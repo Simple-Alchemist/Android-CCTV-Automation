@@ -5,6 +5,7 @@ from typing import Any
 from automation_server import AutomationServer
 from camera_script import automation_run
 from database import NetworkDB
+from config import AutomationServerConfig, CameraScriptConfig
 
 tvs: dict[str, AutomationServer] = dict()
 tracker: dict[Any, str] = dict()
@@ -14,18 +15,18 @@ with NetworkDB() as ndb:
     #Creating TV Objects
     for network in ndb.fetch_all_network(): 
         
-        #tv name                           #IP         #port
-        tvs[network[0]] =  AutomationServer(network[1], network[2])
+        #tv name                                                   #IP           #port
+        tvs[network[0]] =  AutomationServer(AutomationServerConfig(IP=network[1], port=network[2]))
 
 logger.info("Successfully Created TV Objects of all Networks")
 
 with ThreadPoolExecutor(max_workers=len(tvs)) as executor: 
-
     
     for tv_name in tvs:
         
         logger.info("Executing Automation through Threads")
-        futures = executor.submit(automation_run, tvs[tv_name])
+        
+        futures = executor.submit(automation_run, tvs[tv_name], CameraScriptConfig())
         tracker[futures] = tv_name
 
     
