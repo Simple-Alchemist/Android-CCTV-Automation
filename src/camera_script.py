@@ -2,8 +2,8 @@ from loguru import logger
 from uiautomator2.exceptions import (
     ConnectError,
     SessionBrokenError
-    
 )
+
 import time
 import sys
 
@@ -22,24 +22,27 @@ logger.add(
 
 logger.configure(extra={"socket": "SYSTEM"})
 
+
 def automation_run(server: AutomationServer, cs_config: CameraScriptConfig) -> bool:
 
     tv_logger = logger.bind(socket=server.socket)
 
+
     for connection_attempt in range(1, cs_config.max_connection_attempt+1):  
+        tv_logger.info(f"{connection_attempt}/{cs_config.max_connection_attempt} to establish the connection")
 
         try:
 
-            tv_logger.info(f"Connecting....")
-            
+            tv_logger.info(f"Attempt to Connect")
+        
             with server: # Automatically Connects to TV and disconnects when some problem occurs
 
+                tv_logger.info("Connection has been Established")
                 
                 for session_attempt in range(1, cs_config.max_session_attempt+1): 
+                    tv_logger.info(f"{session_attempt}/{cs_config.max_session_attempt} to Start the Camera")
 
                     try:
-
-                        tv_logger.info("Connection has been Established")
 
                         if server.is_activities_opened(expected_package=cs_config.dream_page_package,expected_activities=[cs_config.dream_page_activity]):
                                 

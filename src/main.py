@@ -26,12 +26,11 @@ with NetworkDB() as ndb:
 logger.info("Successfully Created TV Objects of all Networks")
 
 with ThreadPoolExecutor(max_workers=len(tvs)) as executor: 
+    logger.info("Executing Automation through Threads")
     
     for tv_name in tvs:
-        
-        logger.info("Executing Automation through Threads")
-        
-        futures = executor.submit(automation_run, tvs[tv_name], CameraScriptConfig())
+
+        futures = executor.submit(automation_run, tvs[tv_name], CameraScriptConfig(max_connection_attempt=2, network_stabilization_time=5))
         tracker[futures] = tv_name
 
     

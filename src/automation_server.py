@@ -5,13 +5,16 @@ from uiautomator2.exceptions import (
 )
 
 from typing import Self, Literal, Any
+from threading import BoundedSemaphore
 
 from config import AutomationServerConfig
 
 
+
 class AutomationServer:
- 
-    
+
+    start_camera_bound = BoundedSemaphore(1)
+
     def __init__(self, as_config: AutomationServerConfig ):
 
         self._config = as_config
@@ -24,7 +27,7 @@ class AutomationServer:
     def __enter__(self) -> Self:
 
         self.connect()
-            
+
         return self
  
     def __exit__(self, exc_type, exc, tb):
@@ -114,19 +117,21 @@ class AutomationServer:
             expected_activities=[self.hik_activity_camera]
             )
     
-    def start_camera(self) -> None: 
+    def start_camera(self) -> None: #Network Heavy Work
 
         # Get more information such classname, index number and e.t.c
         # Or Use Xpath!
-        layout = self.hik_con(
-            resourceId=f"{self._config.hik_package_name}:id/background_layout"
-            ) 
+        with AutomationServer.start_camera_bound:
 
-        if not layout.exists():
+            layout = self.hik_con(
+                resourceId=f"{self._config.hik_package_name}:id/background_layout"
+                ) 
 
-            raise UiObjectNotFoundError("Backgorund Layout doesn't seems to exist")
-            
-        layout.click(timeout=30) 
+            if not layout.exists():
+
+                raise UiObjectNotFoundError("Backgorund Layout doesn't seems to exist")
+                
+            layout.click() 
        
     def close_hik(self) -> None : 
         
@@ -144,7 +149,7 @@ class AutomationServer:
 
         self._tv_con = None
         self._hik_con = None
-   
+        
     def hik_wait(self, timeout=30):
         
         self.hik_con.app_wait(self._config.hik_package_name, timeout=timeout)
