@@ -1,11 +1,10 @@
 from loguru import logger
 from uiautomator2.exceptions import (
     ConnectError,
-    SessionBrokenError
+    UiAutomationNotConnectedError
 )
 
 import time
-import sys
 
 from automation_server import AutomationServer
 from config import CameraScriptConfig
@@ -15,49 +14,45 @@ logger.remove()
 
 # Custom Format where I'll have log displayed along with it's Socket
 logger.add(
-    sys.stderr, 
+    "server.log", 
     format="<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>[{extra[socket]}]</cyan> - <level>{message}</level>",
-    colorize=True
+    colorize=True,
+    mode="w"
 )
 
 logger.configure(extra={"socket": "SYSTEM"})
+
 
 
 def automation_run(server: AutomationServer, cs_config: CameraScriptConfig) -> bool:
 
     tv_logger = logger.bind(socket=server.socket)
 
-
     for connection_attempt in range(1, cs_config.max_connection_attempt+1):  
         tv_logger.info(f"{connection_attempt}/{cs_config.max_connection_attempt} to establish the connection")
 
         try:
 
-            tv_logger.info(f"Attempt to Connect")
+            tv_logger.info(f"Attempt to Connect....")
         
-            with server: # Automatically Connects to TV and disconnects when some problem occurs
+            with server: # Automatically Connects to TV and disconnects automatically
 
-                tv_logger.info("Connection has been Established")
+                tv_logger.info("Connection has been Established.")
                 
                 for session_attempt in range(1, cs_config.max_session_attempt+1): 
-                    tv_logger.info(f"{session_attempt}/{cs_config.max_session_attempt} to Start the Camera")
+
+                    tv_logger.info(f"{session_attempt}/{cs_config.max_session_attempt} attempts to Start the Camera")
+
+                    cs_config.camera_tries = 0 
+                    cs_config.back_tries = 0
 
                     try:
 
-                        if server.is_activities_opened(expected_package=cs_config.dream_page_package,expected_activities=[cs_config.dream_page_activity]):
-                                
-                                tv_logger.info("Currently in Dream Activity")
-                                server.press_button("HOME")
-
-                                tv_logger.info(f"Brought to in Homepage. Allowing {cs_config.press_button_time}s to stabilize...")
-                                time.sleep(cs_config.press_button_time)
-
-
                         tv_logger.info("Establishing Hik-Connect session...")
-                        server.start_hik_session()
-                        server.hik_wait()
+                         
+                        server.start_hik_session() 
 
-                        tv_logger.info(f"Session attached. Allowing {cs_config.device_stabilization_time} to stabilize...")
+                        tv_logger.info(f"Session is being attached, Allowing {cs_config.device_stabilization_time} to stabilize...")
                         time.sleep(cs_config.device_stabilization_time) 
 
                         while True: 
@@ -71,59 +66,68 @@ def automation_run(server: AutomationServer, cs_config: CameraScriptConfig) -> b
                             if server.is_hik_menu_open(): 
                                 
                                 if cs_config.camera_tries >= cs_config.max_camera_tries: 
-                                    tv_logger.debug("Reached Maximum Tries to Run to Camera")
-            
-                                    return False
+
+                                    tv_logger.info("Reached Maximum Tries to Run to Camera")
+
+                                    server.press_button("HOME")
+
+                                    tv_logger.info(f"Brought to in Homepage. Allowing {cs_config.press_button_time}s to stabilize...")
+                                    time.sleep(cs_config.press_button_time)
+
+                                    break
                                 
                                 cs_config.camera_tries += 1
                                 tv_logger.info(f"{cs_config.camera_tries}/{cs_config.max_camera_tries} attempt is left")
                                 tv_logger.info(f"Running the camera...")
 
                                 server.start_camera()
-                                server.hik_activity_wait(activity=server.hik_activity_camera)
                                 
                                 tv_logger.info(f"Camera has been put to start. Allowing {cs_config.device_stabilization_time}s to stabilize....")
                                 time.sleep(cs_config.device_stabilization_time)
 
                                 continue
 
-                            if not server.is_activities_opened(expected_package=server.hik_package_name, expected_activities=server.hik_activity_menus):
-                                
-                                tv_logger.info(f"Another Activity is running - {server.current_app_info['activity']} ")
-                                server.press_button("HOME")
-                                tv_logger.info(f"Home Button Pressed. Allowing {cs_config.press_button_time}s to stabilize") 
+                            if server.is_hik_running(): 
+                            # If Hik running but the desired Activity isn't up then there's a high probability that a "install Dialogue" Poped on the screen 
+                            # To fix that, It will simply Press "BACK" for max times 
+
+                                if cs_config.back_tries >= cs_config.max_back_tries: 
+                                #if it has already reached the max, then it will Press "HOME" and will Re-Try to Launch Hik-connect
+
+                                    tv_logger.info(f"Reached Maximum Tries to Press Back")
+
+                                    server.press_button("HOME")
+
+                                    tv_logger.info(f"Brought to in Homepage. Allowing {cs_config.press_button_time}s to stabilize...")
+                                    time.sleep(cs_config.press_button_time)
+
+
+                                    break
+
+                                cs_config.back_tries += 1        
+                                tv_logger.info(f"{cs_config.back_tries}/{cs_config.max_back_tries} attempt")
+
+                                server.press_button("BACK")
+
+                                logger.info(f"Back Button Pressed. Allowing {cs_config.press_button_time}s to stabilize...")
                                 time.sleep(cs_config.press_button_time)
 
+                                continue
+
                             if not server.is_hik_running():
-                                raise SessionBrokenError("Hik session is not running")
-                            
-                            if cs_config.back_tries >= cs_config.max_back_tries: 
 
-                                tv_logger.debug(f"Reached Maximum Tries to Press Back")
+                                server.press_button("HOME")
 
-                                return False
-                
-                            cs_config.back_tries += 1        
-                            tv_logger.info(f"{cs_config.back_tries}/{cs_config.max_back_tries} attempt")
-                            server.press_button("BACK")
-                            logger.info(f"Back Button Pressed. Allowing {cs_config.press_button_time}s to stabilize...")
-                            time.sleep(cs_config.press_button_time)
-                            
+                                tv_logger.info(f"Brought to in Homepage. Allowing {cs_config.press_button_time}s to stabilize...")
+                                time.sleep(cs_config.press_button_time)
 
-                            if server.is_activities_opened(expected_package=cs_config.home_page_package, expected_activities=[cs_config.home_page_activity]): 
-
-                                tv_logger.info(f"Re-establishing Hik-Connect session")
-                                server.start_hik_session(attach=False)
-                                server.hik_wait()
-
-                                tv_logger.info(f"Session attached. Allowing {cs_config.device_stabilization_time}s to stabilize...")
-                                time.sleep(cs_config.device_stabilization_time)
-
+                                break
+                        
                             continue
                 
                     except Exception as e:
                         
-                        tv_logger.exception(f"[{server.socket}] Unhandled critical error: {e}")
+                        tv_logger.exception(f"Unhandled critical error: {e}")
 
                         if session_attempt <= cs_config.max_session_attempt: 
                             tv_logger.info(f"Will be re-trying in {cs_config.device_stabilization_time}s.....")
@@ -131,12 +135,11 @@ def automation_run(server: AutomationServer, cs_config: CameraScriptConfig) -> b
 
                             continue
 
-                        return False
-                
+                        return False      
 
-        except ConnectError as e:
+        except (ConnectError, UiAutomationNotConnectedError) as e :
 
-            tv_logger.exception(f"Couldn't not establish connection with [{server.socket}]")
+            tv_logger.exception(f"Couldn't not establish connection")
 
 
             if connection_attempt <= cs_config.max_connection_attempt: 
@@ -146,6 +149,11 @@ def automation_run(server: AutomationServer, cs_config: CameraScriptConfig) -> b
                 continue
 
             return False
+        
+        except Exception: 
+            tv_logger.exception(f"Something went wrong")
+            return False
+
         
     else:
 

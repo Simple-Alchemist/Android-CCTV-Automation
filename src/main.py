@@ -9,7 +9,6 @@ from config import AutomationServerConfig, CameraScriptConfig
 
 logger.remove()
 
-# 2. Send everything to the log file instead
 logger.add("server.log", format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | [{extra[socket]}] - {message}", level="DEBUG", mode="w" )
 
 tvs: dict[str, AutomationServer] = dict()
@@ -22,31 +21,50 @@ with NetworkDB() as ndb:
         
         #tv name                                                   #IP           #port
         tvs[network[0]] =  AutomationServer(AutomationServerConfig(IP=network[1], port=network[2]))
-
+        
 logger.info("Successfully Created TV Objects of all Networks")
 
-with ThreadPoolExecutor(max_workers=len(tvs)) as executor: 
-    logger.info("Executing Automation through Threads")
-    
-    for tv_name in tvs:
 
-        futures = executor.submit(automation_run, tvs[tv_name], CameraScriptConfig(max_connection_attempt=2, network_stabilization_time=5))
-        tracker[futures] = tv_name
+counter = 0
+while tvs and counter <= 10:
+    counter+=1
 
-    
-    for completed_task in as_completed(tracker): 
+    with ThreadPoolExecutor(max_workers=len(tvs)) as executor: 
 
-        tv_name = tracker[completed_task]
+        logger.info("Executing Automation through Threads")
+        
+        for tv_name in tvs:
 
-        try: 
+            futures = executor.submit(automation_run, tvs[tv_name], CameraScriptConfig())
+            tracker[futures] = tv_name
 
-            result = completed_task.result()
+        
+        for completed_task in as_completed(tracker): 
 
-            if not result: 
+            tv_name = tracker[completed_task]
 
-                logger.info(f"{tv_name} of {tvs[tv_name].socket} failed to switch on Camera")
+            try: 
 
-        except Exception as e: 
+                result = completed_task.result()
 
-            logger.exception(e)
+                if result: 
+                    print(f"{tvs.pop(tv_name)} task is Complete")     
+
+            except Exception as e: 
+
+                logger.exception(e)
+
+else: 
+
+    if tvs:
+
+        logger.debug(f"Failed to Switch on Camera of {tvs}")
+
+    else: 
+        logger.info("Successfully swtiched on all the Cameras")
+
+
+
+
+            
         

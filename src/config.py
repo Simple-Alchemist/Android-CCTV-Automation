@@ -16,7 +16,7 @@ class AutomationServerConfig:
 
 @dataclass(kw_only=True)
 class CameraScriptConfig:
-
+    
     max_connection_attempt: int = field(default=3)
     max_session_attempt: int = field(default=3)
     camera_tries: int = field(default=0, init=False)
@@ -24,16 +24,12 @@ class CameraScriptConfig:
     back_tries: int = field(default=0, init=False)   
     max_back_tries: int = field(default=5)
 
-    press_button_time: int = field(default=15)
-    device_stabilization_time: int = field(default=30)
-    network_stabilization_time: int = field(default=60)
+    press_button_time: int = field(default=5)
+    device_stabilization_time: int = field(default=60)
+    network_stabilization_time: int = field(default=120)
 
     dream_page_package: str = field(default="com.google.android.backdrop")
     dream_page_activity: str = field(default="android.service.dreams.DreamActivity")
-
-    home_page_package: str = field(default="com.google.android.tvlauncher")
-    home_page_activity: str = field(default=".MainActivity")
-    
 
 
 
