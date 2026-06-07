@@ -29,8 +29,9 @@ counter = 0
 while tvs and counter <= 10:
     
     counter+=1
-    total_threads = len(tvs)//3
-    with ThreadPoolExecutor(max_workers=total_threads) as executor: 
+    logger.info(f"Counter: {counter}")
+
+    with ThreadPoolExecutor(max_workers=len(tvs)) as executor: 
 
         logger.info("Executing Automation through Threads")
         
