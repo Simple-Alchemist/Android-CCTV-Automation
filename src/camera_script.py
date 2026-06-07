@@ -4,6 +4,7 @@ from uiautomator2.exceptions import (
     UiAutomationNotConnectedError
 )
 
+import http.client
 import time
 
 from automation_server import AutomationServer
@@ -101,7 +102,6 @@ def automation_run(server: AutomationServer, cs_config: CameraScriptConfig) -> b
                                     tv_logger.info(f"Brought to in Homepage. Allowing {cs_config.press_button_time}s to stabilize...")
                                     time.sleep(cs_config.press_button_time)
 
-
                                     break
 
                                 cs_config.back_tries += 1        
@@ -124,6 +124,12 @@ def automation_run(server: AutomationServer, cs_config: CameraScriptConfig) -> b
                                 break
                         
                             continue
+
+                    except http.client.RemoteDisconnected:
+                        # If Connection is lost! then it should go to Connection Attempt Loop to re-establish Connection
+                        tv_logger.exception(f"Remote end closed connection without response; Re-Connecting to the TV")
+
+                        break
                 
                     except Exception as e:
                         
@@ -135,7 +141,7 @@ def automation_run(server: AutomationServer, cs_config: CameraScriptConfig) -> b
 
                             continue
 
-                        return False      
+                        return False  
 
         except (ConnectError, UiAutomationNotConnectedError) as e :
 
@@ -151,7 +157,9 @@ def automation_run(server: AutomationServer, cs_config: CameraScriptConfig) -> b
             return False
         
         except Exception: 
+
             tv_logger.exception(f"Something went wrong")
+
             return False
 
         

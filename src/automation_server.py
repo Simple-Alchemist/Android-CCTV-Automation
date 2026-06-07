@@ -34,6 +34,9 @@ class AutomationServer:
         
         self.disconnect()
 
+    def __repr__(self) -> str:
+        return self.socket
+
     @property
     def tv_con(self) -> u2.Device: 
 
@@ -72,7 +75,7 @@ class AutomationServer:
         return self._config.hik_activity_menus
     
     @property
-    def hik_activity_camera(self) -> str: 
+    def hik_activity_camera(self) -> list[str]: 
         return self._config.hik_activity_camera
 
     @property 
@@ -114,7 +117,7 @@ class AutomationServer:
 
         return self.is_activities_opened(
             expected_package=self.hik_package_name, 
-            expected_activities=[self.hik_activity_camera]
+            expected_activities=self.hik_activity_camera
             )
     
     def start_camera(self) -> None: #Network Heavy Work

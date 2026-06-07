@@ -27,14 +27,15 @@ logger.info("Successfully Created TV Objects of all Networks")
 
 counter = 0
 while tvs and counter <= 10:
+    
     counter+=1
-
-    with ThreadPoolExecutor(max_workers=len(tvs)) as executor: 
+    total_threads = len(tvs)//3
+    with ThreadPoolExecutor(max_workers=total_threads) as executor: 
 
         logger.info("Executing Automation through Threads")
         
         for tv_name in tvs:
-
+            
             futures = executor.submit(automation_run, tvs[tv_name], CameraScriptConfig())
             tracker[futures] = tv_name
 
@@ -48,7 +49,11 @@ while tvs and counter <= 10:
                 result = completed_task.result()
 
                 if result: 
-                    print(f"{tvs.pop(tv_name)} task is Complete")     
+                    logger.info(f"{tvs.pop(tv_name)} task is Complete")    
+
+            except KeyError: 
+
+                logger.info(f"{tv_name} is already removed from the queue!")
 
             except Exception as e: 
 
@@ -62,6 +67,7 @@ else:
 
     else: 
         logger.info("Successfully swtiched on all the Cameras")
+
 
 
 
