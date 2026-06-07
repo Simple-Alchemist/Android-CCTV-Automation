@@ -127,13 +127,13 @@ def automation_run(server: AutomationServer, cs_config: CameraScriptConfig) -> b
 
                     except http.client.RemoteDisconnected:
                         # If Connection is lost! then it should go to Connection Attempt Loop to re-establish Connection
-                        tv_logger.exception(f"Remote end closed connection without response; Re-Connecting to the TV")
+                        tv_logger.error(f"Remote end closed connection without response; Re-Connecting to the TV")
 
                         break
                 
-                    except Exception as e:
+                    except Exception:
                         
-                        tv_logger.exception(f"Unhandled critical error: {e}")
+                        tv_logger.exception(f"Unhandled critical error")
 
                         if session_attempt <= cs_config.max_session_attempt: 
                             tv_logger.info(f"Will be re-trying in {cs_config.device_stabilization_time}s.....")
@@ -145,7 +145,7 @@ def automation_run(server: AutomationServer, cs_config: CameraScriptConfig) -> b
 
         except (ConnectError, UiAutomationNotConnectedError) as e :
 
-            tv_logger.exception(f"Couldn't not establish connection")
+            tv_logger.error(f"Couldn't not establish connection")
 
 
             if connection_attempt <= cs_config.max_connection_attempt: 
@@ -158,7 +158,7 @@ def automation_run(server: AutomationServer, cs_config: CameraScriptConfig) -> b
         
         except Exception: 
 
-            tv_logger.exception(f"Something went wrong")
+            tv_logger.exception("An Exception Occured")
 
             return False
 

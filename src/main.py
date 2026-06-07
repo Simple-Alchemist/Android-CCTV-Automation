@@ -55,9 +55,9 @@ while tvs and counter <= 10:
 
                 logger.info(f"{tv_name} is already removed from the queue!")
 
-            except Exception as e: 
+            except Exception: 
 
-                logger.exception(e)
+                logger.exception("")
 
 else: 
 
