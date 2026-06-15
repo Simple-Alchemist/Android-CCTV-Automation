@@ -19,7 +19,7 @@ with NetworkDB() as ndb:
     #Creating TV Objects
     for network in ndb.fetch_all_network(): 
         
-        #tv name                                                   #IP           #port
+        #tv name                                                  #IP           #port
         tvs[network[0]] =  AutomationServer(AutomationServerConfig(IP=network[1], port=network[2]))
         
 logger.info("Successfully Created TV Objects of all Networks")
@@ -50,6 +50,7 @@ while tvs and counter <= 5:
                 result = completed_task.result()
 
                 if result: 
+
                     logger.info(f"{tvs.pop(tv_name)} task is Complete")    
 
             except KeyError: 

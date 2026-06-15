@@ -60,7 +60,7 @@ class AutomationServer:
     @property
     def current_app_info(self) -> dict[str, Any]: 
 
-        app_current =  self.tv_con.app_current()
+        app_current: dict[str, Any] =  self.tv_con.app_current()
         app_current.pop('pid')
         return app_current
 
