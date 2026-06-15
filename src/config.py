@@ -20,8 +20,6 @@ class CameraScriptConfig:
 
     max_connection_attempt: int = field(default=3)
     max_session_attempt: int = field(default=4)
-    camera_tries: int = field(default=0, init=False)
-    max_camera_tries: int = field(default=3)
     back_tries: int = field(default=0, init=False)   
     max_back_tries: int = field(default=5)
 

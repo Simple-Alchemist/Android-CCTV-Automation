@@ -44,7 +44,6 @@ def automation_run(server: AutomationServer, cs_config: CameraScriptConfig) -> b
 
                     tv_logger.info(f"{session_attempt}/{cs_config.max_session_attempt} attempts to Start the Camera")
 
-                    cs_config.camera_tries = 0 
                     cs_config.back_tries = 0
 
                     try:
@@ -66,19 +65,6 @@ def automation_run(server: AutomationServer, cs_config: CameraScriptConfig) -> b
                         
                             if server.is_hik_menu_open(): 
                                 
-                                if cs_config.camera_tries >= cs_config.max_camera_tries: 
-
-                                    tv_logger.info("Reached Maximum Tries to Run to Camera")
-
-                                    server.press_button("HOME")
-
-                                    tv_logger.info(f"Brought to in Homepage. Allowing {cs_config.press_button_time}s to stabilize...")
-                                    time.sleep(cs_config.press_button_time)
-
-                                    break
-                                
-                                cs_config.camera_tries += 1
-                                tv_logger.info(f"{cs_config.camera_tries}/{cs_config.max_camera_tries} attempt is left")
                                 tv_logger.info(f"Running the camera...")
 
                                 server.start_camera()

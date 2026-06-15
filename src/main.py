@@ -26,7 +26,7 @@ logger.info("Successfully Created TV Objects of all Networks")
 
 
 counter = 0
-while tvs and counter <= 10:
+while tvs and counter <= 5:
     
     counter+=1
     logger.info(f"Counter: {counter}")
